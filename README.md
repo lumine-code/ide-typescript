@@ -17,7 +17,7 @@ To install `ide-typescript` search for _ide-typescript_ in the Install pane of t
 
 ## Services
 
-- **lumine.languageServer** (`^1.0.0`): consumed to register the TypeScript adapter with the editor's language-server client.
+- **ide-client** (`^1.0.0`): consumed to register the TypeScript adapter with the editor's language-server client.
 
 ## Contributing
 

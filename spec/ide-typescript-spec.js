@@ -19,7 +19,7 @@ describe("ide-typescript server resolution", () => {
 describe("ide-typescript adapter", () => {
   it("registers with the language-server service", async () => {
     let adapter;
-    const disposable = main.consumeLanguageServer({
+    const disposable = main.consumeIdeClient({
       registerAdapter(registered) {
         adapter = registered;
         return { dispose() {} };
