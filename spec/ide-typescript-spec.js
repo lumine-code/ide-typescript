@@ -33,4 +33,23 @@ describe("ide-typescript adapter", () => {
     expect(launch.transport).toBe("stdio");
     disposable.dispose();
   });
+
+  it("asks the server to offer completions from other modules", () => {
+    let adapter;
+    const disposable = main.consumeIdeClient({
+      registerAdapter(registered) {
+        adapter = registered;
+        return { dispose() {} };
+      },
+    });
+    const { preferences } = adapter.getInitializationOptions();
+
+    // Verified against typescript-language-server 5.3: without this the server
+    // still lists symbols from other modules, but `completionItem/resolve`
+    // returns no `additionalTextEdits` for them — so accepting one inserts the
+    // symbol and leaves the file without its import, silently uncompilable.
+    expect(preferences.includeCompletionsForModuleExports).toBe(true);
+    expect(preferences.includeCompletionsForImportStatements).toBe(true);
+    disposable.dispose();
+  });
 });
