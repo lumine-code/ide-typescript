@@ -61,6 +61,381 @@
       "description": "Absolute path to a `typescript-language-server` executable. Leave empty to use the bundled server.",
       "type": "string",
       "default": ""
+    },
+    "features": {
+      "title": "Features",
+      "description": "Which parts of the TypeScript server the editor uses. Turning one off hands it to the next server serving the same file.",
+      "type": "object",
+      "properties": {
+        "diagnostics": {
+          "title": "Diagnostics",
+          "description": "Report type errors and suggestions in the linter.",
+          "type": "boolean",
+          "default": true
+        },
+        "autocomplete": {
+          "title": "Autocomplete",
+          "description": "Offer completions, with the import they need, while typing.",
+          "type": "boolean",
+          "default": true
+        },
+        "hover": {
+          "title": "Hover",
+          "description": "Show types and documentation on hover.",
+          "type": "boolean",
+          "default": true
+        },
+        "signature": {
+          "title": "Signature Help",
+          "description": "Show the call signature while typing arguments.",
+          "type": "boolean",
+          "default": true
+        },
+        "definition": {
+          "title": "Go To Definition",
+          "description": "Resolve definitions, type definitions and implementations.",
+          "type": "boolean",
+          "default": true
+        },
+        "references": {
+          "title": "Find References",
+          "description": "List the uses of a symbol.",
+          "type": "boolean",
+          "default": true
+        },
+        "symbols": {
+          "title": "Symbols",
+          "description": "Serve document and project symbols to go-to-symbol.",
+          "type": "boolean",
+          "default": true
+        },
+        "outline": {
+          "title": "Outline",
+          "description": "Fill the outline panel with the file's declarations.",
+          "type": "boolean",
+          "default": true
+        },
+        "format": {
+          "title": "Format",
+          "description": "Format documents with tsserver's formatter.",
+          "type": "boolean",
+          "default": true
+        },
+        "rename": {
+          "title": "Rename",
+          "description": "Rename symbols across the project.",
+          "type": "boolean",
+          "default": true
+        },
+        "codeActions": {
+          "title": "Code Actions",
+          "description": "Offer quick fixes and refactorings in the intentions list.",
+          "type": "boolean",
+          "default": true
+        },
+        "inlayHints": {
+          "title": "Inlay Hints",
+          "description": "Show the inferred types and parameter names chosen below.",
+          "type": "boolean",
+          "default": true
+        },
+        "codeLens": {
+          "title": "Code Lens",
+          "description": "Show the implementation and reference counts chosen below.",
+          "type": "boolean",
+          "default": true
+        },
+        "semanticTokens": {
+          "title": "Semantic Tokens",
+          "description": "Colour identifiers with tsserver's classification.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "tsserver": {
+      "title": "tsserver",
+      "description": "The TypeScript installation behind the language server, and how it runs.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "title": "TypeScript Path",
+          "description": "Path to a `tsserver.js`, or to the `lib` directory of a TypeScript installation, to use instead of the bundled one. Point this at your project's own `node_modules/typescript` to check against the version the project builds with.",
+          "type": "string",
+          "default": ""
+        },
+        "useSyntaxServer": {
+          "title": "Syntax Server",
+          "description": "Run a second, lighter server for the answers that need only the file itself, so syntax highlighting and folding stay responsive while the main server is busy with a large project.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "never"
+          ],
+          "default": "auto"
+        },
+        "maxTsServerMemory": {
+          "title": "Memory Limit",
+          "description": "Megabytes the server may use. Raise it for a large project that runs out; set to 0 for the Node default.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "logVerbosity": {
+          "title": "Log Verbosity",
+          "description": "How much tsserver writes to its log, which `ide-client:show-log` opens.",
+          "type": "string",
+          "enum": [
+            "off",
+            "terse",
+            "normal",
+            "requestTime",
+            "verbose"
+          ],
+          "default": "off"
+        }
+      }
+    },
+    "disableAutomaticTypeAcquisition": {
+      "title": "Disable Automatic Type Acquisition",
+      "description": "Stop the server downloading `@types` packages for untyped JavaScript dependencies. Turn this on to work offline, or to keep the server from reaching the network at all.",
+      "type": "boolean",
+      "default": false
+    },
+    "locale": {
+      "title": "Locale",
+      "description": "Language for the server's own messages, such as `de` or `ja`. Leave empty for English.",
+      "type": "string",
+      "default": ""
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "How the server writes the code it inserts.",
+      "type": "object",
+      "properties": {
+        "quotePreference": {
+          "title": "Quote Style",
+          "description": "Quotes used in an inserted import. `auto` follows what the file already uses.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "double",
+            "single"
+          ],
+          "default": "auto"
+        },
+        "importModuleSpecifierPreference": {
+          "title": "Import Path Style",
+          "description": "The path an inserted import is written with.",
+          "type": "string",
+          "enum": [
+            "shortest",
+            "project-relative",
+            "relative",
+            "non-relative"
+          ],
+          "default": "shortest"
+        },
+        "importModuleSpecifierEnding": {
+          "title": "Import Path Ending",
+          "description": "Whether an inserted import path keeps its file extension. `auto` follows the module settings of the project.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "minimal",
+            "index",
+            "js"
+          ],
+          "default": "auto"
+        },
+        "includePackageJsonAutoImports": {
+          "title": "Auto-Import From Dependencies",
+          "description": "Offer symbols from the packages in `package.json`. `auto` stops doing so in a project large enough for it to be slow.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "on",
+            "off"
+          ],
+          "default": "auto"
+        },
+        "preferTypeOnlyAutoImports": {
+          "title": "Prefer Type-Only Imports",
+          "description": "Insert `import type` when the symbol is only used as a type.",
+          "type": "boolean",
+          "default": false
+        },
+        "autoImportFileExcludePatterns": {
+          "title": "Auto-Import Exclusions",
+          "description": "Glob patterns for files no auto-import may come from, such as a deprecated module you do not want offered.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "jsxAttributeCompletionStyle": {
+          "title": "JSX Attribute Completion",
+          "description": "What accepting a JSX attribute inserts. `braces` always writes `={}`; `auto` writes quotes for a string attribute and braces otherwise.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "braces",
+            "none"
+          ],
+          "default": "auto"
+        },
+        "maximumHoverLength": {
+          "title": "Maximum Hover Length",
+          "description": "Characters of a type shown on hover before it is truncated.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 500
+        }
+      }
+    },
+    "inlayHints": {
+      "title": "Inlay Hints",
+      "description": "Which inferred types and names are rendered inline. The editor's own Inlay Hints setting has to be on as well, and every one of these is off until you turn it on.",
+      "type": "object",
+      "properties": {
+        "parameterNames": {
+          "title": "Parameter Names",
+          "description": "Show the name of the parameter an argument is passed to. `literals` does so only for a literal argument, where the name is not already visible in the code.",
+          "type": "string",
+          "enum": [
+            "none",
+            "literals",
+            "all"
+          ],
+          "default": "none"
+        },
+        "parameterNamesWhenArgumentMatches": {
+          "title": "Parameter Names Matching The Argument",
+          "description": "Show the parameter name even when the argument passed already has that name.",
+          "type": "boolean",
+          "default": false
+        },
+        "parameterTypes": {
+          "title": "Parameter Types",
+          "description": "Show the inferred type of an unannotated function parameter.",
+          "type": "boolean",
+          "default": false
+        },
+        "variableTypes": {
+          "title": "Variable Types",
+          "description": "Show the inferred type of an unannotated variable.",
+          "type": "boolean",
+          "default": false
+        },
+        "variableTypesWhenNameMatches": {
+          "title": "Variable Types Matching The Name",
+          "description": "Show the variable's type even when its name already says it.",
+          "type": "boolean",
+          "default": false
+        },
+        "propertyDeclarationTypes": {
+          "title": "Property Types",
+          "description": "Show the inferred type of an unannotated property declaration.",
+          "type": "boolean",
+          "default": false
+        },
+        "functionReturnTypes": {
+          "title": "Return Types",
+          "description": "Show the inferred return type of a function with no annotation.",
+          "type": "boolean",
+          "default": false
+        },
+        "enumMemberValues": {
+          "title": "Enum Member Values",
+          "description": "Show the value an enum member is assigned.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "codeLens": {
+      "title": "Code Lens",
+      "description": "The counts rendered above a declaration. The editor's own Code Lens setting has to be on as well.",
+      "type": "object",
+      "properties": {
+        "implementations": {
+          "title": "Implementations",
+          "description": "Count the implementations of an interface or abstract member.",
+          "type": "boolean",
+          "default": false
+        },
+        "references": {
+          "title": "References",
+          "description": "Count the uses of a declaration.",
+          "type": "boolean",
+          "default": false
+        },
+        "referencesOnAllFunctions": {
+          "title": "References On All Functions",
+          "description": "Count the uses of every function, not only the exported ones.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "completeFunctionCalls": {
+      "title": "Complete Function Calls",
+      "description": "Accepting a function fills in its parameters as snippet tab stops, rather than inserting the name alone.",
+      "type": "boolean",
+      "default": true
+    },
+    "ignoredDiagnosticCodes": {
+      "title": "Ignored Diagnostic Codes",
+      "description": "TypeScript error numbers never to report, without the `TS` prefix — `2307` for an unresolved import, say. The number is shown beside every message in the linter.",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "default": []
+    },
+    "implicitProjectConfiguration": {
+      "title": "Files Outside A Project",
+      "description": "Compiler options for a file with no `tsconfig.json` or `jsconfig.json` above it. A file inside a project takes its options from that project and ignores these.",
+      "type": "object",
+      "properties": {
+        "checkJs": {
+          "title": "Check JavaScript",
+          "description": "Type-check JavaScript files, not only TypeScript.",
+          "type": "boolean",
+          "default": false
+        },
+        "strictNullChecks": {
+          "title": "Strict Null Checks",
+          "description": "Treat `null` and `undefined` as distinct from every other type.",
+          "type": "boolean",
+          "default": true
+        },
+        "strictFunctionTypes": {
+          "title": "Strict Function Types",
+          "description": "Check function parameters contravariantly, which rejects an unsound assignment.",
+          "type": "boolean",
+          "default": true
+        },
+        "experimentalDecorators": {
+          "title": "Experimental Decorators",
+          "description": "Allow the pre-standard decorator syntax.",
+          "type": "boolean",
+          "default": false
+        },
+        "target": {
+          "title": "Target",
+          "description": "The JavaScript version the code is written for.",
+          "type": "string",
+          "default": "ES2020"
+        },
+        "module": {
+          "title": "Module",
+          "description": "The module system the code is written for.",
+          "type": "string",
+          "default": "ESNext"
+        }
+      }
     }
   }
 }

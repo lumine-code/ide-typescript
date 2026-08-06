@@ -7,9 +7,14 @@ Registers `typescript-language-server` with the bundled `ide-client` package, pr
 ## Features
 
 - **Bundled server**: ships `typescript-language-server` with a pinned TypeScript, no setup required.
-- **Custom binary**: the Server Path setting points at any other `typescript-language-server` executable.
+- **Custom binary**: the Server Path setting points at any other `typescript-language-server` executable, and the TypeScript Path setting checks against the version your project builds with.
+- **Import style**: chooses the quotes, path style, and extension of every import the server inserts, and can exclude modules from auto-import entirely.
+- **Inlay hints**: shows inferred parameter names, variable, property and return types, and enum values, each behind its own switch.
+- **Code lens**: counts implementations and references above a declaration.
+- **Files outside a project**: sets the compiler options for a file with no `tsconfig.json` above it.
+- **Feature switches**: any of the fourteen capabilities the server offers can be turned off, which hands it to another server on the same file.
 - **Project sessions**: one server per project root, started lazily with the first matching editor.
-- **Workspace configuration**: answers server configuration requests from the editor settings.
+- **Workspace configuration**: answers server configuration requests from the editor settings, including the tab settings tsserver formats its own edits with.
 
 ## Installation
 
