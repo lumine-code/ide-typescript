@@ -37,12 +37,12 @@ describe("ide-typescript adapter", () => {
   beforeEach(async () => {
     // Applies the configSchema, so the defaults the adapter reads are the ones
     // the manifest declares rather than undefined.
-    await atom.packages.activatePackage("ide-typescript");
+    await lumine.packages.activatePackage("ide-typescript");
     ({ adapter, disposable } = registerAdapter());
   });
   afterEach(async () => {
     disposable.dispose();
-    await atom.packages.deactivatePackage("ide-typescript");
+    await lumine.packages.deactivatePackage("ide-typescript");
   });
 
   it("registers with the language-server service", async () => {
@@ -67,10 +67,10 @@ describe("ide-typescript adapter", () => {
   });
 
   it("maps the settings page onto the server's own preference names", () => {
-    atom.config.set("ide-typescript.preferences.quotePreference", "single");
-    atom.config.set("ide-typescript.preferences.importModuleSpecifierPreference", "relative");
-    atom.config.set("ide-typescript.tsserver.path", "/ts/lib");
-    atom.config.set("ide-typescript.tsserver.maxTsServerMemory", 4096);
+    lumine.config.set("ide-typescript.preferences.quotePreference", "single");
+    lumine.config.set("ide-typescript.preferences.importModuleSpecifierPreference", "relative");
+    lumine.config.set("ide-typescript.tsserver.path", "/ts/lib");
+    lumine.config.set("ide-typescript.tsserver.maxTsServerMemory", 4096);
 
     const options = adapter.getInitializationOptions();
     expect(options.preferences.quotePreference).toBe("single");
@@ -79,13 +79,13 @@ describe("ide-typescript adapter", () => {
     expect(options.maxTsServerMemory).toBe(4096);
     // Zero is how the settings page spells "the Node default", which the
     // server spells as an absent value.
-    atom.config.set("ide-typescript.tsserver.maxTsServerMemory", 0);
+    lumine.config.set("ide-typescript.tsserver.maxTsServerMemory", 0);
     expect(adapter.getInitializationOptions().maxTsServerMemory).toBeUndefined();
   });
 
   it("names the inlay hints for what they show, not for the server's flags", () => {
-    atom.config.set("ide-typescript.inlayHints.parameterNames", "literals");
-    atom.config.set("ide-typescript.inlayHints.functionReturnTypes", true);
+    lumine.config.set("ide-typescript.inlayHints.parameterNames", "literals");
+    lumine.config.set("ide-typescript.inlayHints.functionReturnTypes", true);
 
     const { typescript, javascript } = adapter.getSettings();
     expect(typescript.inlayHints.includeInlayParameterNameHints).toBe("literals");
@@ -97,8 +97,8 @@ describe("ide-typescript adapter", () => {
   });
 
   it("carries the code lens and diagnostic settings the server reads", () => {
-    atom.config.set("ide-typescript.codeLens.references", true);
-    atom.config.set("ide-typescript.ignoredDiagnosticCodes", [2307]);
+    lumine.config.set("ide-typescript.codeLens.references", true);
+    lumine.config.set("ide-typescript.ignoredDiagnosticCodes", [2307]);
 
     const settings = adapter.getSettings();
     expect(settings.typescript.referencesCodeLens.enabled).toBe(true);
@@ -115,7 +115,7 @@ describe("ide-typescript adapter", () => {
     // server's way rather than the file's.
     it("answers from the editor holding the file", async () => {
       const filePath = path.join(__dirname, "fixture.ts");
-      const editor = await atom.workspace.open(filePath);
+      const editor = await lumine.workspace.open(filePath);
       editor.setTabLength(3);
       editor.setSoftTabs(false);
 
@@ -127,7 +127,7 @@ describe("ide-typescript adapter", () => {
     });
 
     it("falls back to the editor settings for a file that is not open", () => {
-      atom.config.set("editor.tabLength", 8);
+      lumine.config.set("editor.tabLength", 8);
       const options = adapter.getWorkspaceConfiguration(
         "formattingOptions",
         "file:///nowhere/absent.ts",
