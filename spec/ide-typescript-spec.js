@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { resolveServer } = require("../lib/server");
+const { resolveServer, managedServer } = require("../lib/server");
 const main = require("../lib/main");
 
 const registerAdapter = () => {
@@ -27,6 +27,23 @@ describe("ide-typescript server resolution", () => {
     expect(launch.command).toBe(process.execPath);
     expect(fs.existsSync(launch.args[0])).toBe(true);
     expect(launch.env.ELECTRON_RUN_AS_NODE).toBe("1");
+  });
+
+  it("prefers a managed install over the bundled server", async () => {
+    const managed = { modulePath: "/managed/server.js", version: "9.9.9" };
+    const launch = await resolveServer("", managed);
+    expect(launch.args[0]).toBe(managed.modulePath);
+    // Reported in the session details, so which copy is running is visible.
+    expect(launch.version).toBe("9.9.9");
+    expect((await resolveServer(process.execPath, managed)).command).toBe(process.execPath);
+  });
+
+  it("declares the bundled floor so uninstall falls back", () => {
+    // The dependency is always present, so removing the managed copy returns to
+    // a working server rather than to none.
+    expect(managedServer.source).toBe("npm");
+    expect(managedServer.bundled).toBe(true);
+    expect(managedServer.module).toContain("node_modules/");
   });
 });
 

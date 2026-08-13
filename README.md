@@ -7,6 +7,7 @@ Registers `typescript-language-server` with the bundled `ide-client` package, pr
 ## Features
 
 - **Bundled server**: ships `typescript-language-server` with a pinned TypeScript, no setup required.
+- **Managed upgrade**: installs a newer server from npm when you want one, and removing it returns to the bundled copy.
 - **Custom binary**: the Server Path setting points at any other `typescript-language-server` executable, and the TypeScript Path setting checks against the version your project builds with.
 - **Import style**: chooses the quotes, path style, and extension of every import the server inserts, and can exclude modules from auto-import entirely.
 - **Inlay hints**: shows inferred parameter names, variable, property and return types, and enum values, each behind its own switch.
