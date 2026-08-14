@@ -19,11 +19,11 @@ Registers `typescript-language-server` with the bundled `ide-client` package, pr
 
 ## Installation
 
-To install `ide-typescript` search for _ide-typescript_ in the Install pane of the Lumine settings or run `lumine --install lumine-code/ide-typescript`.
+To install `ide-typescript` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-typescript`.
 
 ## Services
 
-- **ide-client** (`^1.0.0`): consumed to register the TypeScript adapter with the editor's language-server client.
+- `ide-client`: consumed to register the TypeScript adapter with the editor's language-server client.
 
 ## Contributing
 
