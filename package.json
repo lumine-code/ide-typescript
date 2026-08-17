@@ -356,7 +356,7 @@
     },
     "codeLens": {
       "title": "Code Lens",
-      "description": "The counts rendered above a declaration. The editor's own Code Lens setting has to be on as well.",
+      "description": "The counts rendered above a declaration. The code-lens package has to be installed and enabled as well.",
       "type": "object",
       "properties": {
         "implementations": {

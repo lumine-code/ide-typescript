@@ -11,7 +11,7 @@ Registers `typescript-language-server` with the bundled `ide-client` package, pr
 - **Custom binary**: the Server Path setting points at any other `typescript-language-server` executable, and the TypeScript Path setting checks against the version your project builds with.
 - **Import style**: chooses the quotes, path style, and extension of every import the server inserts, and can exclude modules from auto-import entirely.
 - **Inlay hints**: shows inferred parameter names, variable, property and return types, and enum values, each behind its own switch.
-- **Code lens**: counts implementations and references above a declaration.
+- **Code lens**: serves implementation and reference counts for the line a declaration sits on, which the code-lens package renders above it.
 - **Files outside a project**: sets the compiler options for a file with no `tsconfig.json` above it.
 - **Feature switches**: any of the fourteen capabilities the server offers can be turned off, which hands it to another server on the same file.
 - **Project sessions**: one server per project root, started lazily with the first matching editor.
