@@ -75,7 +75,7 @@ describe("ide-typescript adapter", () => {
   it("asks the server to offer completions from other modules", () => {
     const { preferences } = adapter.getInitializationOptions();
 
-    // Verified against typescript-language-server 5.3: without this the server
+    // Verified against typescript-language-server 6.0: without this the server
     // still lists symbols from other modules, but `completionItem/resolve`
     // returns no `additionalTextEdits` for them — so accepting one inserts the
     // symbol and leaves the file without its import, silently uncompilable.
