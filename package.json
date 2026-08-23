@@ -38,11 +38,6 @@
       }
     }
   },
-  "lem": {
-    "hold": {
-      "typescript": "pinned to the 5.x line: 7.0 is the native rewrite and ships no tsserver.js for typescript-language-server to spawn"
-    }
-  },
   "dependencies": {
     "typescript": "5.9.3",
     "typescript-language-server": "5.3.0"
