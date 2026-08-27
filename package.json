@@ -60,89 +60,104 @@
     "features": {
       "title": "Features",
       "description": "Which parts of the TypeScript server the editor uses. Turning one off hands it to the next server serving the same file.",
+      "scopeResolution": "grammar",
       "type": "object",
       "properties": {
         "diagnostics": {
           "title": "Diagnostics",
           "description": "Report type errors and suggestions in the linter.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "autocomplete": {
           "title": "Autocomplete",
           "description": "Offer completions, with the import they need, while typing.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "hover": {
           "title": "Hover",
           "description": "Show types and documentation on hover.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "signature": {
           "title": "Signature Help",
           "description": "Show the call signature while typing arguments.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "definition": {
           "title": "Go To Definition",
           "description": "Resolve definitions, type definitions and implementations.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "references": {
           "title": "Find References",
           "description": "List the uses of a symbol.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "symbols": {
           "title": "Symbols",
           "description": "Serve document and project symbols to go-to-symbol.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "outline": {
           "title": "Outline",
           "description": "Fill the outline panel with the file's declarations.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "format": {
           "title": "Format",
           "description": "Format documents with tsserver's formatter.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "rename": {
           "title": "Rename",
           "description": "Rename symbols across the project.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "codeActions": {
           "title": "Code Actions",
           "description": "Offer quick fixes and refactorings in the intentions list.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "inlayHints": {
           "title": "Inlay Hints",
           "description": "Show the inferred types and parameter names chosen below.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "codeLens": {
           "title": "Code Lens",
           "description": "Show the implementation and reference counts chosen below.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         },
         "semanticTokens": {
           "title": "Semantic Tokens",
           "description": "Colour identifiers with tsserver's classification.",
+          "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
         }
