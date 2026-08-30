@@ -165,7 +165,6 @@ describe("ide-typescript adapter", () => {
       "definition",
       "references",
       "symbols",
-      "outline",
       "format",
       "rename",
       "codeActions",
