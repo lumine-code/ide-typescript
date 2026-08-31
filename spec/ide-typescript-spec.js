@@ -67,6 +67,14 @@ describe("ide-typescript adapter", () => {
     expect(adapter.grammarScopes).toContain("source.ts");
     expect(adapter.grammarScopes).toContain("source.js");
     expect(adapter.settingsKeyPaths).toEqual(["ide-typescript"]);
+    expect(adapter.restartKeyPaths).toEqual([
+      "ide-typescript.serverPath",
+      "ide-typescript.tsserver",
+      "ide-typescript.locale",
+      "ide-typescript.disableAutomaticTypeAcquisition",
+      "ide-typescript.preferences",
+      "ide-typescript.completeFunctionCalls",
+    ]);
     const launch = await adapter.resolveServer({ rootPath: __dirname });
     expect(launch.cwd).toBe(__dirname);
     expect(launch.transport).toBe("stdio");
