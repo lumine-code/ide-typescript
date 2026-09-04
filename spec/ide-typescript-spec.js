@@ -1,7 +1,9 @@
 const fs = require("fs");
 const path = require("path");
+const { pathToFileURL } = require("url");
 const { resolveServer, managedServer } = require("../lib/server");
 const main = require("../lib/main");
+const { formattingOptions, pathKey, uriToPath } = main;
 
 const registerAdapter = () => {
   let adapter;
@@ -44,6 +46,10 @@ describe("ide-typescript server resolution", () => {
     expect(managedServer.source).toBe("npm");
     expect(managedServer.bundled).toBe(true);
     expect(managedServer.module).toContain("node_modules/");
+    expect(managedServer.packages).toEqual([
+      "typescript-language-server",
+      { name: "typescript", version: "^6.0.3" },
+    ]);
   });
 });
 
@@ -91,6 +97,53 @@ describe("ide-typescript adapter", () => {
     expect(preferences.includeCompletionsForImportStatements).toBe(true);
   });
 
+  it("advertises Move to File only while the refactor rename UI is active", () => {
+    const editor = {};
+    const target = {};
+    spyOn(lumine.workspace, "getTextEditors").and.returnValue([editor]);
+    spyOn(lumine.views, "getView").and.returnValue(target);
+    spyOn(lumine.commands, "findCommands").and.returnValue([]);
+
+    expect(adapter.getInitializationOptions().supportsMoveToFileCodeAction).toBe(false);
+    lumine.commands.findCommands.and.returnValue([{ name: "refactor:rename" }]);
+    expect(adapter.getInitializationOptions().supportsMoveToFileCodeAction).toBe(true);
+  });
+
+  it("reveals and awaits the refactor UI requested by Move to File", async () => {
+    const filePath = path.join(__dirname, "move-target.ts");
+    const target = {};
+    const editor = { setCursorBufferPosition: jasmine.createSpy("setCursorBufferPosition") };
+    spyOn(lumine.workspace, "open").and.returnValue(Promise.resolve(editor));
+    spyOn(lumine.views, "getView").and.returnValue(target);
+    spyOn(lumine.commands, "findCommands").and.returnValue([{ name: "refactor:rename" }]);
+    let finishRename;
+    const renameFinished = new Promise((resolve) => (finishRename = resolve));
+    spyOn(lumine.commands, "dispatch").and.returnValue(renameFinished);
+
+    let settled = false;
+    const pending = adapter
+      .handleServerRequest("_typescript.rename", {
+        textDocument: { uri: pathToFileURL(filePath).href },
+        position: { line: 4, character: 7 },
+      })
+      .then((result) => {
+        settled = true;
+        return result;
+      });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(lumine.workspace.open).toHaveBeenCalledOnceWith(filePath, { activateItem: true });
+    expect(editor.setCursorBufferPosition).toHaveBeenCalledOnceWith([4, 7], {
+      autoscroll: true,
+    });
+    expect(lumine.commands.dispatch).toHaveBeenCalledOnceWith(target, "refactor:rename");
+    expect(settled).toBe(false);
+    finishRename();
+    expect(await pending).toBeNull();
+    await expectAsync(adapter.handleServerRequest("unknown/request", {})).toBeResolvedTo(undefined);
+  });
+
   it("maps the settings page onto the server's own preference names", () => {
     lumine.config.set("ide-typescript.preferences.quotePreference", "single");
     lumine.config.set("ide-typescript.preferences.importModuleSpecifierPreference", "relative");
@@ -133,6 +186,23 @@ describe("ide-typescript adapter", () => {
     expect(adapter.getWorkspaceConfiguration("typescript").referencesCodeLens.enabled).toBe(true);
   });
 
+  it("carries inferred-project compiler settings instead of leaving the controls inert", () => {
+    lumine.config.set("ide-typescript.implicitProjectConfiguration.checkJs", true);
+    lumine.config.set("ide-typescript.implicitProjectConfiguration.experimentalDecorators", true);
+    lumine.config.set("ide-typescript.implicitProjectConfiguration.target", "ES2020");
+    lumine.config.set("ide-typescript.implicitProjectConfiguration.module", "ESNext");
+
+    expect(adapter.getSettings().implicitProjectConfiguration).toEqual({
+      checkJs: true,
+      experimentalDecorators: true,
+      target: "ES2020",
+      module: "ESNext",
+    });
+    expect(adapter.getWorkspaceConfiguration("implicitProjectConfiguration")).toEqual(
+      adapter.getSettings().implicitProjectConfiguration,
+    );
+  });
+
   describe("formattingOptions", () => {
     // tsserver formats the edits it produces itself — organize-imports, a
     // rename that adds an import — and asks for the tab settings of the file it
@@ -159,6 +229,27 @@ describe("ide-typescript adapter", () => {
       );
       expect(options.tabSize).toBe(8);
       expect(typeof options.insertSpaces).toBe("boolean");
+    });
+
+    it("matches a server-canonicalized Windows drive to the open editor", () => {
+      expect(uriToPath("file:///c%3A/Project/example.ts")).toBe("c:\\Project\\example.ts");
+      expect(pathKey("C:\\Project\\example.ts", "win32")).toBe(
+        pathKey("c:/Project/example.ts", "win32"),
+      );
+      expect(pathKey("/Project/Example.ts", "linux")).not.toBe(
+        pathKey("/Project/example.ts", "linux"),
+      );
+      spyOn(lumine.workspace, "getTextEditors").and.returnValue([
+        {
+          getPath: () => "C:\\Project\\example.ts",
+          getTabLength: () => 7,
+          getSoftTabs: () => false,
+        },
+      ]);
+      expect(formattingOptions("file:///c%3A/Project/example.ts", "win32")).toEqual({
+        tabSize: 7,
+        insertSpaces: false,
+      });
     });
   });
 

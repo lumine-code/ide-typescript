@@ -48,7 +48,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-n": "^18.3.0",
     "globals": "^17.11.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "vscode-jsonrpc": "^9.0.2"
   },
   "configSchema": {
     "serverPath": {
@@ -407,18 +408,6 @@
           "description": "Type-check JavaScript files, not only TypeScript.",
           "type": "boolean",
           "default": false
-        },
-        "strictNullChecks": {
-          "title": "Strict Null Checks",
-          "description": "Treat `null` and `undefined` as distinct from every other type.",
-          "type": "boolean",
-          "default": true
-        },
-        "strictFunctionTypes": {
-          "title": "Strict Function Types",
-          "description": "Check function parameters contravariantly, which rejects an unsound assignment.",
-          "type": "boolean",
-          "default": true
         },
         "experimentalDecorators": {
           "title": "Experimental Decorators",
