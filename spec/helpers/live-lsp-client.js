@@ -90,6 +90,7 @@ class LiveLspClient {
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
     });
+    this.closed = new Promise((resolve) => this.child.once("close", resolve));
     this.child.stderr.on("data", (chunk) => (this.stderr += chunk.toString()));
     this.connection = createMessageConnection(
       new StreamMessageReader(this.child.stdout),
@@ -170,19 +171,16 @@ class LiveLspClient {
     if (!this.connection) return;
     try {
       await withTimeout(this.connection.sendRequest("shutdown"), "shutdown", 2500);
-      this.connection.sendNotification("exit");
+      await this.connection.sendNotification("exit");
     } catch {
       this.child?.kill();
     }
-    await Promise.race([
-      new Promise((resolve) => this.child.once("exit", resolve)),
-      new Promise((resolve) =>
-        setTimeout(() => {
-          this.child.kill();
-          resolve();
-        }, 1000),
-      ),
-    ]);
+    try {
+      await withTimeout(this.closed, "server close", 1000);
+    } catch {
+      this.child.kill();
+      await withTimeout(this.closed, "forced server close", 2500);
+    }
     this.connection.dispose();
   }
 }
