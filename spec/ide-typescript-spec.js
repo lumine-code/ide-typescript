@@ -97,6 +97,43 @@ describe("ide-typescript adapter", () => {
     expect(preferences.includeCompletionsForImportStatements).toBe(true);
   });
 
+  it("searches all activated TypeScript projects without selecting the last document", async () => {
+    const signal = new AbortController().signal;
+    const session = {
+      request: jasmine.createSpy("request").and.resolveTo({
+        type: "response",
+        body: [
+          {
+            name: "answer",
+            kind: "function",
+            file: __filename,
+            start: { line: 2, offset: 3 },
+            end: { line: 2, offset: 9 },
+            containerName: "module",
+          },
+        ],
+      }),
+    };
+    const results = await adapter.searchWorkspaceSymbols("ans", { session, signal });
+    expect(session.request).toHaveBeenCalledOnceWith(
+      "workspace/executeCommand",
+      {
+        command: "typescript.tsserverRequest",
+        arguments: ["navto", { searchValue: "ans", maxResultCount: 256 }],
+      },
+      { signal },
+    );
+    expect(results[0]).toEqual({
+      name: "answer",
+      kind: 12,
+      containerName: "module",
+      location: {
+        uri: pathToFileURL(__filename).href,
+        range: { start: { line: 1, character: 2 }, end: { line: 1, character: 8 } },
+      },
+    });
+  });
+
   it("advertises Move to File only while the refactor rename UI is active", () => {
     const editor = {};
     const target = {};

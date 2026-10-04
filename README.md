@@ -2,6 +2,8 @@
 
 TypeScript and JavaScript language-server adapter.
 
+Workspace symbol search covers every TypeScript project already activated in the running server, regardless of the current editor. It uses tsserver's `navto` request without a source-file restriction and returns up to 256 results. Opening the workspace symbol picker does not start the server or discover closed projects.
+
 Registers `typescript-language-server` with `ide-client`, providing completions, diagnostics, navigation, formatting, and refactoring for TypeScript and JavaScript projects.
 
 ## Features

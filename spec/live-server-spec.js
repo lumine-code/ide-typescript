@@ -65,4 +65,36 @@ describe("ide-typescript bundled server", () => {
     const items = Array.isArray(completion) ? completion : completion.items;
     expect(items.map(({ label }) => label)).toContain("toFixed");
   });
+
+  it("finds symbols in two independently activated configured projects", async () => {
+    const projectFiles = [];
+    for (const [directory, name] of [
+      ["alpha", "SearchableAlpha"],
+      ["beta", "SearchableBeta"],
+    ]) {
+      const projectPath = path.join(rootPath, directory);
+      fs.mkdirSync(projectPath);
+      fs.writeFileSync(
+        path.join(projectPath, "tsconfig.json"),
+        JSON.stringify({ compilerOptions: { target: "ES2020" }, files: ["source.ts"] }),
+      );
+      const filePath = path.join(projectPath, "source.ts");
+      const text = `export function ${name}() { return 1; }`;
+      fs.writeFileSync(filePath, text);
+      projectFiles.push({ uri: fileUri(filePath), text });
+    }
+    await client.start();
+    for (const { uri, text } of projectFiles) {
+      client.open(uri, "typescript", text);
+      await client.request("textDocument/documentSymbol", { textDocument: { uri } });
+    }
+    const found = await adapter.searchWorkspaceSymbols("Searchable", {
+      session: { request: (method, params) => client.request(method, params) },
+    });
+    expect(found.map(({ name }) => name).sort()).toEqual(["SearchableAlpha", "SearchableBeta"]);
+    const locationKey = (uri) => main.pathKey(main.uriToPath(uri));
+    expect(found.map(({ location }) => locationKey(location.uri)).sort()).toEqual(
+      projectFiles.map(({ uri }) => locationKey(uri)).sort(),
+    );
+  });
 });
