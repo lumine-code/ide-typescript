@@ -181,6 +181,20 @@ describe("ide-typescript adapter", () => {
     await expectAsync(adapter.handleServerRequest("unknown/request", {})).toBeResolvedTo(undefined);
   });
 
+  it("rejects malformed rename resources and negative positions before opening a file", async () => {
+    spyOn(lumine.workspace, "open");
+    for (const params of [
+      { textDocument: { uri: "file://[" }, position: { line: 0, character: 0 } },
+      { textDocument: { uri: "file:///file.ts" }, position: { line: -1, character: 0 } },
+      { textDocument: { uri: "file:///file.ts" }, position: { line: 0, character: -1 } },
+    ]) {
+      await expectAsync(
+        adapter.handleServerRequest("_typescript.rename", params),
+      ).toBeRejectedWithError(/invalid location/);
+    }
+    expect(lumine.workspace.open).not.toHaveBeenCalled();
+  });
+
   it("maps the settings page onto the server's own preference names", () => {
     lumine.config.set("ide-typescript.preferences.quotePreference", "single");
     lumine.config.set("ide-typescript.preferences.importModuleSpecifierPreference", "relative");
@@ -266,6 +280,13 @@ describe("ide-typescript adapter", () => {
       );
       expect(options.tabSize).toBe(8);
       expect(typeof options.insertSpaces).toBe("boolean");
+    });
+
+    it("uses editor defaults for malformed resources instead of rejecting configuration", () => {
+      for (const uri of ["file://[", "file:///invalid%ZZ.ts", {}, "untitled:test.ts"]) {
+        expect(uriToPath(uri)).toBeNull();
+        expect(formattingOptions(uri).tabSize).toBe(lumine.config.get("editor.tabLength"));
+      }
     });
 
     it("matches a server-canonicalized Windows drive to the open editor", () => {
