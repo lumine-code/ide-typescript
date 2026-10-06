@@ -1,7 +1,11 @@
+const { serverContext } = require("./helpers/server-context");
 const fs = require("fs");
 const path = require("path");
 const { pathToFileURL } = require("url");
-const { resolveServer, managedServer } = require("../lib/server");
+const { resolveServer: resolveServerWithContext, managedServer } = require("../lib/server");
+const resolveServer = (configuredPath, managedServer = null) =>
+  resolveServerWithContext(serverContext({ rootPath: __dirname, managedServer }), configuredPath);
+
 const main = require("../lib/main");
 const { formattingOptions, pathKey, uriToPath } = main;
 
@@ -32,7 +36,10 @@ describe("ide-typescript server resolution", () => {
   });
 
   it("prefers a managed install over the bundled server", async () => {
-    const managed = { modulePath: "/managed/server.js", version: "9.9.9" };
+    const managed = {
+      modulePath: require.resolve("typescript-language-server/lib/cli.mjs"),
+      version: "9.9.9",
+    };
     const launch = await resolveServer("", managed);
     expect(launch.args[0]).toBe(managed.modulePath);
     // Reported in the session details, so which copy is running is visible.
@@ -81,7 +88,7 @@ describe("ide-typescript adapter", () => {
       "ide-typescript.preferences",
       "ide-typescript.completeFunctionCalls",
     ]);
-    const launch = await adapter.resolveServer({ rootPath: __dirname });
+    const launch = await adapter.resolveServer(serverContext({ rootPath: __dirname }));
     expect(launch.cwd).toBe(__dirname);
     expect(launch.transport).toBe("stdio");
   });
@@ -329,5 +336,13 @@ describe("ide-typescript adapter", () => {
       "codeLens",
       "semanticTokens",
     ]);
+  });
+});
+
+describe("ide-typescript shared server resolution", () => {
+  it("preserves an unavailable selection as null", async () => {
+    const { resolveServer: resolveWithContext } = require("../lib/server");
+    const resolver = { select: jasmine.createSpy("select").and.resolveTo(null) };
+    expect(await resolveWithContext({ rootPath: __dirname, resolver }, "")).toBeNull();
   });
 });
