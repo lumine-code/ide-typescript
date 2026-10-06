@@ -4,7 +4,7 @@ TypeScript and JavaScript language-server adapter.
 
 Workspace symbol search covers every TypeScript project already activated in the running server, regardless of the current editor. It uses tsserver's `navto` request without a source-file restriction and returns up to 256 results. Opening the workspace symbol picker does not start the server or discover closed projects.
 
-Registers `typescript-language-server` with `ide-client`, providing completions, diagnostics, navigation, formatting, and refactoring for TypeScript and JavaScript projects.
+Registers `typescript-language-server` with `ide`, providing completions, diagnostics, navigation, formatting, and refactoring for TypeScript and JavaScript projects.
 
 ## Features
 
@@ -22,11 +22,11 @@ Registers `typescript-language-server` with `ide-client`, providing completions,
 
 To install `ide-typescript` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-typescript`.
 
-Install `ide-client` first.
+Install `ide` first.
 
 ## Services
 
-- `ide-client`: consumed to register the TypeScript adapter with the editor's language-server client.
+- `ide`: consumed to register the TypeScript adapter with the editor's language-server client.
 
 ## Contributing
 
