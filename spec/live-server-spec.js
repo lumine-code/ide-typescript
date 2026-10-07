@@ -1,8 +1,9 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const main = require("../lib/main");
 const { LiveLspClient, fileUri } = require("./helpers/live-lsp-client");
+
+let main;
 
 const registerAdapter = () => {
   let adapter;
@@ -24,7 +25,7 @@ describe("ide-typescript bundled server", () => {
     originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000;
     rootPath = fs.mkdtempSync(path.join(os.tmpdir(), "ide-typescript-live-"));
-    await lumine.packages.activatePackage("ide-typescript");
+    main = (await lumine.packages.activatePackage("ide-typescript")).mainModule;
     lumine.config.set("ide-typescript.implicitProjectConfiguration.checkJs", true);
     ({ adapter, disposable } = registerAdapter());
     client = new LiveLspClient(adapter, rootPath);
@@ -35,7 +36,14 @@ describe("ide-typescript bundled server", () => {
     disposable.dispose();
     lumine.config.unset("ide-typescript.implicitProjectConfiguration.checkJs");
     await lumine.packages.deactivatePackage("ide-typescript");
-    fs.rmSync(rootPath, { recursive: true, force: true });
+    // Shutdown kills tsserver without awaiting its exit. Windows can retain
+    // its working-directory handle briefly after the language server closes.
+    await fs.promises.rm(rootPath, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
     jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
   });
 
