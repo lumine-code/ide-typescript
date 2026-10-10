@@ -14,7 +14,7 @@ Registers `typescript-language-server` with `ide`, providing completions, diagno
 - **Code lens**: serves implementation and reference counts for the line a declaration sits on, which the code-lens package renders above it.
 - **Refactoring**: renames symbols, applies source actions, and offers Move to File when the optional `refactor` package is active to collect the new name.
 - **Files outside a project**: sets the compiler options for a file with no `tsconfig.json` above it.
-- **Feature switches**: any of the fourteen capabilities the server offers can be turned off, which hands it to another server on the same file.
+- **Feature switches**: choose which supported capabilities the editor uses, letting another server handle the ones you disable.
 - **Project sessions**: one server per project root, started lazily with the first matching editor.
 - **Workspace configuration**: answers server configuration requests from the editor settings, including the tab settings tsserver formats its own edits with.
 
