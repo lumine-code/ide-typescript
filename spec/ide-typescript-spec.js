@@ -179,7 +179,7 @@ describe("ide-typescript adapter", () => {
 
     expect(lumine.workspace.open).toHaveBeenCalledOnceWith(filePath, { activateItem: true });
     expect(editor.setCursorBufferPosition).toHaveBeenCalledOnceWith([4, 7], {
-      autoscroll: true,
+      mode: "zone",
     });
     expect(lumine.commands.dispatch).toHaveBeenCalledOnceWith(target, "refactor:rename");
     expect(settled).toBe(false);
