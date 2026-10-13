@@ -1,0 +1,16 @@
+{
+  "title": "ide-typescript",
+  "description": "TypeScript catches an incompatible assignment and explains the type error.",
+  "recordedOn": "2026-10-13",
+  "sourceRevision": "f241e1fab87e71fce9eb2a87deedc4cabd3d8da1",
+  "mode": "normal",
+  "fontSettings": "default",
+  "images": [
+    {
+      "file": "demo.png",
+      "label": "TypeScript catches an incompatible assignment and explains the type error.",
+      "width": 1100,
+      "height": 490
+    }
+  ]
+}

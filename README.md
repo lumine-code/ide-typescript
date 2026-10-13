@@ -18,6 +18,8 @@ Registers `typescript-language-server` with `ide`, providing completions, diagno
 - **Project sessions**: one server per project root, started lazily with the first matching editor.
 - **Workspace configuration**: answers server configuration requests from the editor settings, including the tab settings tsserver formats its own edits with.
 
+![TypeScript catches an incompatible assignment and explains the type error.](.github/demo.png)
+
 ## Installation
 
 To install `ide-typescript` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-typescript`.
