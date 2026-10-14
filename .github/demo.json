@@ -1,16 +1,96 @@
 {
   "title": "ide-typescript",
   "description": "TypeScript catches an incompatible assignment and explains the type error.",
-  "recordedOn": "2026-10-13",
-  "sourceRevision": "f241e1fab87e71fce9eb2a87deedc4cabd3d8da1",
+  "recordedOn": "2026-10-14",
+  "sourceRevision": "b6c17cfd213aeeb0c72223d17c3bcc053493fb93",
+  "themeSourceRevision": "14a69683b0e3238e2bc128fbfae3866c1e4ee9c6",
   "mode": "normal",
   "fontSettings": "default",
+  "scenario": "demo.js",
+  "recipeHash": "1065bfa314298cbbc762ae11439b49fbdc4a412b874ee5787c5ba8ffc9988aba",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130",
+    "devicePixelRatio": 1,
+    "locale": "en-GB",
+    "fontFamily": "Fira Code, Menlo, DejaVu Sans Mono, Consolas, monospace",
+    "fontSize": 14,
+    "themes": ["one-day-syntax", "one-day-ui"]
+  },
+  "viewport": { "width": 1100, "height": 490 },
+  "cornerRadius": 10,
+  "sources": {
+    "editor": {
+      "revision": "385bd1b3ac2db600f1c7e077474d9da4d6deebc4",
+      "dirty": true,
+      "workingTreeHash": "08ba420fdc2c3d9a27ae9973c15f1efb7ccd57a582986958a8f1049bc8f34d60"
+    },
+    "package": {
+      "revision": "b6c17cfd213aeeb0c72223d17c3bcc053493fb93",
+      "dirty": true,
+      "workingTreeHash": "f04fac2bda2f676e27afeb473c7a557495febfb578940904669ae187ac8fb557"
+    },
+    "ide-typescript": {
+      "revision": "b6c17cfd213aeeb0c72223d17c3bcc053493fb93",
+      "dirty": true,
+      "workingTreeHash": "f04fac2bda2f676e27afeb473c7a557495febfb578940904669ae187ac8fb557"
+    },
+    "documentation-view": {
+      "revision": "5d0a00d98bf0b1f7a5444f548a4683a07062ada0",
+      "dirty": true,
+      "workingTreeHash": "012fbb9e6b8dc1f192ee363c7fbf3170548e39169ca52d87f81061f968e31fd3"
+    },
+    "hover": {
+      "revision": "6a05977f1748bd17f7559631f423f34c257d162b",
+      "dirty": true,
+      "workingTreeHash": "09e99cf5a334b94b212db69efe6c22849d4058416233745e88706c0b0e8ec02d"
+    },
+    "ide": {
+      "revision": "9c74eaee81caf600e73c5c50e1fbf9d9f894d560",
+      "dirty": true,
+      "workingTreeHash": "d648bd45282065de577eef821a325ad0cd0c4b2ee57852485d537e5d21d192f1"
+    },
+    "language-typescript": {
+      "revision": "e3b5360cda7b98fe365cf085fbef24de6f583b25",
+      "dirty": true,
+      "workingTreeHash": "742513fd113a9d5f9a2a40e401146b31209a97c3d81bf7db97d75a0204b6df69"
+    },
+    "linter": {
+      "revision": "0965aceb6980bd6c2b706b30874b11bdb6331a5e",
+      "dirty": true,
+      "workingTreeHash": "abd277412c84d07180787e870b71ce2b6b63f9766063ae81a029f7723467f3c3"
+    },
+    "linter-panel": {
+      "revision": "e8fe8ad0f2906a1bc430cd70793d1f82c467682c",
+      "dirty": true,
+      "workingTreeHash": "8f9214c58bdb765df2338b72708ad922514614c418882d9f95107249a87f2eda"
+    },
+    "marker": {
+      "revision": "090aa886a5318fb8a3251cee47c452cf068e08c2",
+      "dirty": true,
+      "workingTreeHash": "d48a91a2025e76cd6da2916c45bbfef07d82dd550cc7f111378e824f86eb144f"
+    },
+    "one-theme": {
+      "revision": "14a69683b0e3238e2bc128fbfae3866c1e4ee9c6",
+      "dirty": true,
+      "workingTreeHash": "50ec2f83a6347dd8113870992ec4eb2be4014f3d9e12213c2f51b543f1eca793"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "ide-typescript/signal.ts",
+      "sha256": "7158628edf35614e3687397ce9ca44806ff3f8bbcebc9c12e789db5a0bfcbe12"
+    }
+  ],
   "images": [
     {
       "file": "demo.png",
       "label": "TypeScript catches an incompatible assignment and explains the type error.",
       "width": 1100,
-      "height": 490
+      "height": 490,
+      "sha256": "dd645368398effa068af33615d68d5464b766c7a2e79428c8488922983fcd105"
     }
   ]
 }
