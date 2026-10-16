@@ -79,6 +79,7 @@ describe("ide-typescript adapter", () => {
     expect(adapter.id).toBe("ide-typescript");
     expect(adapter.grammarScopes).toContain("source.ts");
     expect(adapter.grammarScopes).toContain("source.js");
+    expect(adapter.caseSensitiveFileNames).toBe(process.platform !== "win32");
     expect(adapter.settingsKeyPaths).toEqual(["ide-typescript"]);
     expect(adapter.restartKeyPaths).toEqual([
       "ide-typescript.serverPath",
