@@ -1,73 +1,26 @@
-const { serverContext } = require("./helpers/server-context");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
-const { resolveServer: resolveServerWithContext, managedServer } = require("../lib/server");
-const resolveServer = (configuredPath, managedServer = null) =>
-  resolveServerWithContext(serverContext({ rootPath: __dirname, managedServer }), configuredPath);
+const { serverContext } = require("./helpers/server-context");
 
-const main = require("../lib/main");
-const { formattingOptions, pathKey, uriToPath } = main;
-
+let main, server;
 const registerAdapter = () => {
   let adapter;
   const disposable = main.consumeIde({
-    registerAdapter(registered) {
-      adapter = registered;
+    registerAdapter(value) {
+      adapter = value;
       return { dispose() {} };
     },
-    getSessions: () => [],
-    restart: async () => {},
   });
   return { adapter, disposable };
 };
 
-describe("ide-typescript server resolution", () => {
-  it("prefers the configured path", async () => {
-    const launch = await resolveServer(process.execPath);
-    expect(launch.command).toBe(process.execPath);
-    expect(launch.args).toEqual(["--stdio"]);
-  });
-  it("falls back to the bundled server module", async () => {
-    const launch = await resolveServer("");
-    expect(launch.command).toBe(process.execPath);
-    expect(fs.existsSync(launch.args[0])).toBe(true);
-    expect(launch.env.ELECTRON_RUN_AS_NODE).toBe("1");
-  });
-
-  it("prefers a managed install over the bundled server", async () => {
-    const managed = {
-      modulePath: require.resolve("typescript-language-server/lib/cli.mjs"),
-      version: "9.9.9",
-    };
-    const launch = await resolveServer("", managed);
-    expect(launch.args[0]).toBe(managed.modulePath);
-    // Reported in the session details, so which copy is running is visible.
-    expect(launch.version).toBe("9.9.9");
-    expect((await resolveServer(process.execPath, managed)).command).toBe(process.execPath);
-  });
-
-  it("declares the bundled floor so uninstall falls back", () => {
-    // The dependency is always present, so removing the managed copy returns to
-    // a working server rather than to none.
-    expect(managedServer.source).toBe("npm");
-    expect(managedServer.bundled).toBe(true);
-    expect(managedServer.module).toContain("node_modules/");
-    expect(managedServer.packages).toEqual([
-      "typescript-language-server",
-      { name: "typescript", version: "^6.0.3" },
-    ]);
-  });
-});
-
-describe("ide-typescript adapter", () => {
-  let adapter;
-  let disposable;
-
+describe("ide-typescript native server", () => {
+  let adapter, disposable;
   beforeEach(async () => {
-    // Applies the configSchema, so the defaults the adapter reads are the ones
-    // the manifest declares rather than undefined.
-    await lumine.packages.activatePackage("ide-typescript");
+    main = (await lumine.packages.activatePackage("ide-typescript")).mainModule;
+    server = require("../lib/server");
     ({ adapter, disposable } = registerAdapter());
   });
   afterEach(async () => {
@@ -75,299 +28,283 @@ describe("ide-typescript adapter", () => {
     await lumine.packages.deactivatePackage("ide-typescript");
   });
 
-  it("registers with the language-server service", async () => {
-    expect(adapter.id).toBe("ide-typescript");
-    expect(adapter.grammarScopes).toContain("source.ts");
-    expect(adapter.grammarScopes).toContain("source.js");
-    expect(adapter.caseSensitiveFileNames).toBe(process.platform !== "win32");
-    expect(adapter.settingsKeyPaths).toEqual(["ide-typescript"]);
-    expect(adapter.restartKeyPaths).toEqual([
-      "ide-typescript.serverPath",
-      "ide-typescript.tsserver",
-      "ide-typescript.locale",
-      "ide-typescript.disableAutomaticTypeAcquisition",
-      "ide-typescript.preferences",
-      "ide-typescript.completeFunctionCalls",
-    ]);
-    const launch = await adapter.resolveServer(serverContext({ rootPath: __dirname }));
+  it("launches the native compiler directly with the LSP stdio transport", async () => {
+    const launch = await server.resolveServer(serverContext({ rootPath: __dirname }), "");
+    expect(launch.command).toBe(
+      server.nativeExecutable(require.resolve("typescript/package.json")),
+    );
+    expect(launch.command).not.toBe(process.execPath);
+    expect(launch.args).toEqual(["--lsp", "--stdio"]);
     expect(launch.cwd).toBe(__dirname);
     expect(launch.transport).toBe("stdio");
+    expect(launch.env?.ELECTRON_RUN_AS_NODE).toBeUndefined();
   });
 
-  it("asks the server to offer completions from other modules", () => {
-    const { preferences } = adapter.getInitializationOptions();
-
-    // Verified against typescript-language-server 6.0: without this the server
-    // still lists symbols from other modules, but `completionItem/resolve`
-    // returns no `additionalTextEdits` for them — so accepting one inserts the
-    // symbol and leaves the file without its import, silently uncompilable.
-    expect(preferences.includeCompletionsForModuleExports).toBe(true);
-    expect(preferences.includeCompletionsForImportStatements).toBe(true);
-  });
-
-  it("searches all activated TypeScript projects without selecting the last document", async () => {
-    const signal = new AbortController().signal;
-    const session = {
-      request: jasmine.createSpy("request").and.resolveTo({
-        type: "response",
-        body: [
-          {
-            name: "answer",
-            kind: "function",
-            file: __filename,
-            start: { line: 2, offset: 3 },
-            end: { line: 2, offset: 9 },
-            containerName: "module",
-          },
-        ],
-      }),
-    };
-    const results = await adapter.searchWorkspaceSymbols("ans", { session, signal });
-    expect(session.request).toHaveBeenCalledOnceWith(
-      "workspace/executeCommand",
-      {
-        command: "typescript.tsserverRequest",
-        arguments: ["navto", { searchValue: "ans", maxResultCount: 256 }],
-      },
-      { signal },
+  it("selects an explicit native executable before reading a managed installation", async () => {
+    const getManagedServer = jasmine.createSpy("managed").and.throwError("Corrupt installation");
+    const launch = await server.resolveServer(
+      serverContext({ getManagedServer }),
+      process.execPath,
     );
-    expect(results[0]).toEqual({
-      name: "answer",
-      kind: 12,
-      containerName: "module",
-      location: {
-        uri: pathToFileURL(__filename).href,
-        range: { start: { line: 1, character: 2 }, end: { line: 1, character: 8 } },
-      },
-    });
-  });
-
-  it("advertises Move to File only while the refactor rename UI is active", () => {
-    const editor = {};
-    const target = {};
-    spyOn(lumine.workspace, "getTextEditors").and.returnValue([editor]);
-    spyOn(lumine.views, "getView").and.returnValue(target);
-    spyOn(lumine.commands, "findCommands").and.returnValue([]);
-
-    expect(adapter.getInitializationOptions().supportsMoveToFileCodeAction).toBe(false);
-    lumine.commands.findCommands.and.returnValue([{ name: "refactor:rename" }]);
-    expect(adapter.getInitializationOptions().supportsMoveToFileCodeAction).toBe(true);
-  });
-
-  it("reveals and awaits the refactor UI requested by Move to File", async () => {
-    const filePath = path.join(__dirname, "move-target.ts");
-    const target = {};
-    const editor = { setCursorBufferPosition: jasmine.createSpy("setCursorBufferPosition") };
-    spyOn(lumine.workspace, "open").and.returnValue(Promise.resolve(editor));
-    spyOn(lumine.views, "getView").and.returnValue(target);
-    spyOn(lumine.commands, "findCommands").and.returnValue([{ name: "refactor:rename" }]);
-    let finishRename;
-    const renameFinished = new Promise((resolve) => (finishRename = resolve));
-    spyOn(lumine.commands, "dispatch").and.returnValue(renameFinished);
-
-    let settled = false;
-    const pending = adapter
-      .handleServerRequest("_typescript.rename", {
-        textDocument: { uri: pathToFileURL(filePath).href },
-        position: { line: 4, character: 7 },
-      })
-      .then((result) => {
-        settled = true;
-        return result;
-      });
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(lumine.workspace.open).toHaveBeenCalledOnceWith(filePath, { activateItem: true });
-    expect(editor.setCursorBufferPosition).toHaveBeenCalledOnceWith([4, 7], {
-      mode: "zone",
-    });
-    expect(lumine.commands.dispatch).toHaveBeenCalledOnceWith(target, "refactor:rename");
-    expect(settled).toBe(false);
-    finishRename();
-    expect(await pending).toBeNull();
-    await expectAsync(adapter.handleServerRequest("unknown/request", {})).toBeResolvedTo(undefined);
-  });
-
-  it("rejects malformed rename resources and negative positions before opening a file", async () => {
-    spyOn(lumine.workspace, "open");
-    for (const params of [
-      { textDocument: { uri: "file://[" }, position: { line: 0, character: 0 } },
-      { textDocument: { uri: "file:///file.ts" }, position: { line: -1, character: 0 } },
-      { textDocument: { uri: "file:///file.ts" }, position: { line: 0, character: -1 } },
-    ]) {
-      await expectAsync(
-        adapter.handleServerRequest("_typescript.rename", params),
-      ).toBeRejectedWithError(/invalid location/);
-    }
-    expect(lumine.workspace.open).not.toHaveBeenCalled();
-  });
-
-  it("maps the settings page onto the server's own preference names", () => {
-    lumine.config.set("ide-typescript.preferences.quotePreference", "single");
-    lumine.config.set("ide-typescript.preferences.importModuleSpecifierPreference", "relative");
-    lumine.config.set("ide-typescript.tsserver.path", "/ts/lib");
-    lumine.config.set("ide-typescript.tsserver.maxTsServerMemory", 4096);
-
-    const options = adapter.getInitializationOptions();
-    expect(options.preferences.quotePreference).toBe("single");
-    expect(options.preferences.importModuleSpecifierPreference).toBe("relative");
-    expect(options.tsserver.path).toBe("/ts/lib");
-    expect(options.maxTsServerMemory).toBe(4096);
-    // Zero is how the settings page spells "the Node default", which the
-    // server spells as an absent value.
-    lumine.config.set("ide-typescript.tsserver.maxTsServerMemory", 0);
-    expect(adapter.getInitializationOptions().maxTsServerMemory).toBeUndefined();
-  });
-
-  it("names the inlay hints for what they show, not for the server's flags", () => {
-    lumine.config.set("ide-typescript.inlayHints.parameterNames", "literals");
-    lumine.config.set("ide-typescript.inlayHints.functionReturnTypes", true);
-
-    const { typescript, javascript } = adapter.getSettings();
-    expect(typescript.inlayHints.includeInlayParameterNameHints).toBe("literals");
-    expect(typescript.inlayHints.includeInlayFunctionLikeReturnTypeHints).toBe(true);
-    expect(typescript.inlayHints.includeInlayVariableTypeHints).toBe(false);
-    // The server keeps these per language and serves .js files from the other
-    // block, so both have to carry them.
-    expect(javascript.inlayHints).toEqual(typescript.inlayHints);
-  });
-
-  it("carries the code lens and diagnostic settings the server reads", () => {
-    lumine.config.set("ide-typescript.codeLens.references", true);
-    lumine.config.set("ide-typescript.ignoredDiagnosticCodes", [2307]);
-
-    const settings = adapter.getSettings();
-    expect(settings.typescript.referencesCodeLens.enabled).toBe(true);
-    expect(settings.diagnostics.ignoredCodes).toEqual([2307]);
-    expect(settings.completions.completeFunctionCalls).toBe(true);
-    expect(adapter.getWorkspaceConfiguration("diagnostics").ignoredCodes).toEqual([2307]);
-    expect(adapter.getWorkspaceConfiguration("typescript").referencesCodeLens.enabled).toBe(true);
-  });
-
-  it("carries inferred-project compiler settings instead of leaving the controls inert", () => {
-    lumine.config.set("ide-typescript.implicitProjectConfiguration.checkJs", true);
-    lumine.config.set("ide-typescript.implicitProjectConfiguration.experimentalDecorators", true);
-    lumine.config.set("ide-typescript.implicitProjectConfiguration.target", "ES2020");
-    lumine.config.set("ide-typescript.implicitProjectConfiguration.module", "ESNext");
-
-    expect(adapter.getSettings().implicitProjectConfiguration).toEqual({
-      checkJs: true,
-      experimentalDecorators: true,
-      target: "ES2020",
-      module: "ESNext",
-    });
-    expect(adapter.getWorkspaceConfiguration("implicitProjectConfiguration")).toEqual(
-      adapter.getSettings().implicitProjectConfiguration,
-    );
-  });
-
-  describe("formattingOptions", () => {
-    // tsserver formats the edits it produces itself — organize-imports, a
-    // rename that adds an import — and asks for the tab settings of the file it
-    // is about to edit. Answering with nothing leaves those edits indented the
-    // server's way rather than the file's.
-    it("answers from the editor holding the file", async () => {
-      const filePath = path.join(__dirname, "fixture.ts");
-      const editor = await lumine.workspace.open(filePath);
-      editor.setTabLength(3);
-      editor.setSoftTabs(false);
-
-      const uri = `file:///${filePath.replaceAll("\\", "/")}`;
-      expect(adapter.getWorkspaceConfiguration("formattingOptions", uri)).toEqual({
-        tabSize: 3,
-        insertSpaces: false,
-      });
-    });
-
-    it("falls back to the editor settings for a file that is not open", () => {
-      lumine.config.set("editor.tabLength", 8);
-      const options = adapter.getWorkspaceConfiguration(
-        "formattingOptions",
-        "file:///nowhere/absent.ts",
-      );
-      expect(options.tabSize).toBe(8);
-      expect(typeof options.insertSpaces).toBe("boolean");
-    });
-
-    it("uses editor defaults for malformed resources instead of rejecting configuration", () => {
-      for (const uri of ["file://[", "file:///invalid%ZZ.ts", {}, "untitled:test.ts"]) {
-        expect(uriToPath(uri)).toBeNull();
-        expect(formattingOptions(uri).tabSize).toBe(lumine.config.get("editor.tabLength"));
-      }
-    });
-
-    it("matches a server-canonicalized Windows drive to the open editor", () => {
-      expect(uriToPath("file:///c%3A/Project/example.ts")).toBe("c:\\Project\\example.ts");
-      expect(pathKey("C:\\Project\\example.ts", "win32")).toBe(
-        pathKey("c:/Project/example.ts", "win32"),
-      );
-      expect(pathKey("/Project/Example.ts", "linux")).not.toBe(
-        pathKey("/Project/example.ts", "linux"),
-      );
-      spyOn(lumine.workspace, "getTextEditors").and.returnValue([
-        {
-          getPath: () => "C:\\Project\\example.ts",
-          getTabLength: () => 7,
-          getSoftTabs: () => false,
-        },
-      ]);
-      expect(formattingOptions("file:///c%3A/Project/example.ts", "win32")).toEqual({
-        tabSize: 7,
-        insertSpaces: false,
-      });
-    });
-  });
-
-  it("offers a switch for every capability the server advertises", () => {
-    // Read from the server's own initialize response; it serves all of them.
-    const { configSchema } = require("../package.json");
-    expect(Object.keys(configSchema.features.properties)).toEqual([
-      "diagnostics",
-      "autocomplete",
-      "hover",
-      "signature",
-      "definition",
-      "references",
-      "symbols",
-      "format",
-      "rename",
-      "codeActions",
-      "inlayHints",
-      "codeLens",
-      "semanticTokens",
-    ]);
-  });
-});
-
-describe("ide-typescript shared server resolution", () => {
-  it("uses the configured server without reading an invalid managed installation", async () => {
-    const getManagedServer = jasmine
-      .createSpy("getManagedServer")
-      .and.throwError("The managed installation is corrupt.");
-    const context = serverContext({ rootPath: __dirname, getManagedServer });
-    const { resolveServer: resolveWithContext } = require("../lib/server");
-    const launch = await resolveWithContext(context, process.execPath);
     expect(launch.command).toBe(process.execPath);
-    expect(launch.version).toBeUndefined();
+    expect(launch.args).toEqual(["--lsp", "--stdio"]);
     expect(getManagedServer).not.toHaveBeenCalled();
   });
 
-  it("reports an invalid managed installation before considering the bundled server", async () => {
-    const getManagedServer = jasmine
-      .createSpy("getManagedServer")
-      .and.throwError("The managed installation is corrupt.");
-    const context = serverContext({ rootPath: __dirname, getManagedServer });
-    const { resolveServer: resolveWithContext } = require("../lib/server");
-    await expectAsync(resolveWithContext(context, "")).toBeRejectedWithError(
-      "The managed installation is corrupt.",
+  it("resolves the platform binary from the selected managed compiler generation", async () => {
+    const manifest = require.resolve("typescript/package.json");
+    const launch = await server.resolveServer(
+      serverContext({ managedServer: { modulePath: manifest, version: "7.0.2" } }),
+      "",
     );
-    expect(getManagedServer).toHaveBeenCalledOnceWith();
+    expect(launch.command).toBe(server.nativeExecutable(manifest));
+    expect(launch.version).toBe("7.0.2");
+  });
+
+  it("reports a corrupt managed install before considering the bundled compiler", async () => {
+    await expectAsync(
+      server.resolveServer(
+        serverContext({
+          getManagedServer: () => {
+            throw new Error("Corrupt installation");
+          },
+        }),
+        "",
+      ),
+    ).toBeRejectedWithError("Corrupt installation");
   });
 
   it("preserves an unavailable selection as null", async () => {
-    const { resolveServer: resolveWithContext } = require("../lib/server");
     const resolver = { select: jasmine.createSpy("select").and.resolveTo(null) };
-    expect(await resolveWithContext({ rootPath: __dirname, resolver }, "")).toBeNull();
+    expect(await server.resolveServer({ rootPath: __dirname, resolver }, "")).toBeNull();
+  });
+
+  it("registers native installation, project sessions and the standard workspace-symbol path", () => {
+    expect(adapter.id).toBe("ide-typescript");
+    expect(adapter.grammarScopes).toEqual([
+      "source.js",
+      "source.js.jsx",
+      "source.ts",
+      "source.tsx",
+    ]);
+    expect(adapter.caseSensitiveFileNames).toBe(process.platform !== "win32");
+    expect(adapter.sessionScope).toBe("project-root");
+    expect(adapter.settingsKeyPaths).toEqual(["ide-typescript"]);
+    expect(adapter.restartKeyPaths).toEqual(["ide-typescript.serverPath"]);
+    expect(adapter.bundledServer).toBe(true);
+    expect(adapter.installServer).toBe(server.installServer);
+    expect(adapter.latestServerVersion).toBe(server.latestServerVersion);
+    expect(adapter.searchWorkspaceSymbols).toBeUndefined();
+    expect(adapter.handleServerRequest).toBeUndefined();
+  });
+
+  it("uses pull diagnostics supported by the language-server client", () => {
+    expect(adapter.getInitializationOptions()).toEqual({ disablePushDiagnostics: true });
+  });
+
+  it("uses the native configuration sections and includes all activated projects in symbol search", () => {
+    const settings = adapter.getSettings();
+    expect(Object.keys(settings)).toEqual(["js/ts", "typescript", "javascript", "editor"]);
+    expect(settings["js/ts"].workspaceSymbols).toEqual({
+      scope: "allOpenProjects",
+      excludeLibrarySymbols: true,
+    });
+    expect(settings["js/ts"].suggest).toEqual({
+      autoImports: true,
+      includeCompletionsForImportStatements: true,
+    });
+    expect(adapter.getWorkspaceConfiguration("js/ts")).toEqual(settings["js/ts"]);
+    expect(adapter.getWorkspaceConfiguration()).toEqual(settings);
+    expect(adapter.getWorkspaceConfiguration("constructor")).toBeUndefined();
+    expect(adapter.getWorkspaceConfiguration("__proto__")).toBeUndefined();
+  });
+
+  it("maps import style to the native preferences rather than tsserver initialization", () => {
+    lumine.config.set("ide-typescript.preferences.quoteStyle", "single");
+    lumine.config.set("ide-typescript.preferences.importModuleSpecifier", "relative");
+    lumine.config.set("ide-typescript.preferences.autoImportFileExcludePatterns", [
+      "**/internal/**",
+    ]);
+    const preferences = adapter.getSettings()["js/ts"].preferences;
+    expect(preferences.quoteStyle).toBe("single");
+    expect(preferences.importModuleSpecifier).toBe("relative");
+    expect(preferences.autoImportFileExcludePatterns).toEqual(["**/internal/**"]);
+  });
+
+  it("uses the native inlay-hint configuration and inverts suppression switches", () => {
+    lumine.config.set("ide-typescript.inlayHints.parameterNames", "literals");
+    lumine.config.set("ide-typescript.inlayHints.parameterNamesWhenArgumentMatches", true);
+    lumine.config.set("ide-typescript.inlayHints.functionReturnTypes", true);
+    const hints = adapter.getSettings()["js/ts"].inlayHints;
+    expect(hints.parameterNames).toEqual({
+      enabled: "literals",
+      suppressWhenArgumentMatchesName: false,
+    });
+    expect(hints.functionLikeReturnTypes.enabled).toBe(true);
+    expect(hints.variableTypes.enabled).toBe(false);
+    expect(hints.variableTypes.suppressWhenTypeMatchesName).toBe(true);
+  });
+
+  it("updates code-lens, locale and automatic-type-acquisition preferences", () => {
+    lumine.config.set("ide-typescript.codeLens.references", true);
+    lumine.config.set("ide-typescript.locale", "de");
+    lumine.config.set("ide-typescript.disableAutomaticTypeAcquisition", true);
+    const settings = adapter.getSettings()["js/ts"];
+    expect(settings.referencesCodeLens.enabled).toBe(true);
+    expect(settings.locale).toBe("de");
+    expect(settings.tsserver.automaticTypeAcquisition.enabled).toBe(false);
+  });
+
+  it("removes controls for the retired Node tsserver implementation", () => {
+    const { configSchema, dependencies } = require("../package.json");
+    expect(dependencies).toEqual({ typescript: "7.0.2" });
+    for (const name of [
+      "tsserver",
+      "completeFunctionCalls",
+      "ignoredDiagnosticCodes",
+      "implicitProjectConfiguration",
+    ])
+      expect(configSchema[name]).toBeUndefined();
+    expect(configSchema.features.properties.callHierarchy.default).toBe(true);
+    expect(configSchema.preferences.properties.maximumHoverLength).toBeUndefined();
+    expect(configSchema.preferences.properties.includePackageJsonAutoImports).toBeUndefined();
+  });
+
+  it("answers editor formatting configuration from the requested document", async () => {
+    const filePath = path.join(__dirname, "fixture.ts");
+    const editor = await lumine.workspace.open(filePath);
+    editor.setTabLength(3);
+    editor.setSoftTabs(false);
+    expect(adapter.getWorkspaceConfiguration("editor", pathToFileURL(filePath).href)).toEqual({
+      tabSize: 3,
+      insertSpaces: false,
+    });
+  });
+
+  it("uses editor defaults for malformed resources and closed files", () => {
+    lumine.config.set("editor.tabLength", 8);
+    for (const uri of ["file://[", "file:///invalid%ZZ.ts", {}, "untitled:test.ts"]) {
+      expect(main.uriToPath(uri)).toBeNull();
+      expect(main.formattingOptions(uri).tabSize).toBe(8);
+    }
+    expect(adapter.getWorkspaceConfiguration("editor", "file:///nowhere/absent.ts").tabSize).toBe(
+      8,
+    );
+  });
+
+  it("matches native server-canonicalized Windows URIs to the open editor", () => {
+    expect(main.uriToPath("file:///c%3A/Project/example.ts")).toBe("c:\\Project\\example.ts");
+    expect(main.pathKey("C:\\Project\\example.ts", "win32")).toBe(
+      main.pathKey("c:/Project/example.ts", "win32"),
+    );
+    expect(main.pathKey("/Project/Example.ts", "linux")).not.toBe(
+      main.pathKey("/Project/example.ts", "linux"),
+    );
+    spyOn(lumine.workspace, "getTextEditors").and.returnValue([
+      {
+        getPath: () => "C:\\Project\\example.ts",
+        getTabLength: () => 7,
+        getSoftTabs: () => false,
+      },
+    ]);
+    expect(main.formattingOptions("file:///c%3A/Project/example.ts", "win32")).toEqual({
+      tabSize: 7,
+      insertSpaces: false,
+    });
+  });
+
+  describe("native platform package validation", () => {
+    let directory;
+    beforeEach(() => {
+      directory = fs.mkdtempSync(path.join(os.tmpdir(), "ide-ts-native-"));
+    });
+    afterEach(() => fs.rmSync(directory, { recursive: true, force: true }));
+    it("rejects a classic TypeScript SDK instead of launching a Node tsserver", () => {
+      const manifest = path.join(directory, "package.json");
+      fs.writeFileSync(manifest, JSON.stringify({ name: "typescript", version: "6.0.3" }));
+      expect(() => server.nativeExecutable(manifest)).toThrowError(/native TypeScript 7/);
+    });
+    it("rejects a compiler with no published binary for the selected platform", () => {
+      const manifest = path.join(directory, "package.json");
+      fs.writeFileSync(manifest, JSON.stringify({ name: "typescript", version: "7.0.2" }));
+      expect(() => server.nativeExecutable(manifest)).toThrowError(/no native server/);
+    });
+    it("rejects a platform binary left over from a different compiler generation", () => {
+      const dependency = "@typescript/typescript-" + process.platform + "-" + process.arch;
+      const packageDirectory = path.join(directory, "node_modules", dependency);
+      fs.mkdirSync(packageDirectory, { recursive: true });
+      fs.writeFileSync(
+        path.join(packageDirectory, "package.json"),
+        JSON.stringify({ version: "7.0.1" }),
+      );
+      const manifest = path.join(directory, "package.json");
+      fs.writeFileSync(
+        manifest,
+        JSON.stringify({
+          name: "typescript",
+          version: "7.0.2",
+          optionalDependencies: { [dependency]: "7.0.2" },
+        }),
+      );
+      expect(() => server.nativeExecutable(manifest)).toThrowError(/does not match/);
+    });
+  });
+
+  describe("managed native compiler installation", () => {
+    let api, signal;
+    beforeEach(() => {
+      signal = new AbortController().signal;
+      api = {
+        signal,
+        npmPackageLatestVersion: jasmine.createSpy("latest").and.resolveTo("7.0.2"),
+        npmInstallPackage: jasmine.createSpy("install").and.resolveTo(),
+        npmPackageInstalledVersion: jasmine.createSpy("installed").and.returnValue("7.0.2"),
+        setServerInstallationStatus: jasmine.createSpy("status"),
+      };
+    });
+    it("installs with npm so optional platform binaries are materialized", async () => {
+      const result = await server.installServer({
+        storagePath: __dirname,
+        version: "7.0.2",
+        api,
+        signal,
+      });
+      expect(api.npmInstallPackage).toHaveBeenCalledOnceWith("typescript", "7.0.2", __dirname, {
+        signal,
+      });
+      expect(result).toEqual({ module: "node_modules/typescript/package.json", version: "7.0.2" });
+    });
+    it("discovers the latest native compiler for managed upgrades", async () => {
+      expect(await server.latestServerVersion(api)).toBe("7.0.2");
+      await server.installServer({ storagePath: __dirname, api, signal });
+      expect(api.npmInstallPackage).toHaveBeenCalledOnceWith("typescript", "7.0.2", __dirname, {
+        signal,
+      });
+    });
+    it("rejects a requested classic compiler before installation", async () => {
+      await expectAsync(
+        server.installServer({ storagePath: __dirname, version: "6.0.3", api, signal }),
+      ).toBeRejectedWithError(/TypeScript 7/);
+      expect(api.npmInstallPackage).not.toHaveBeenCalled();
+    });
+    it("does not publish a cancelled or incomplete installation", async () => {
+      const owner = new AbortController();
+      api.npmInstallPackage.and.callFake(async () => owner.abort(new Error("cancelled")));
+      await expectAsync(
+        server.installServer({
+          storagePath: __dirname,
+          version: "7.0.2",
+          api,
+          signal: owner.signal,
+        }),
+      ).toBeRejectedWithError("cancelled");
+      expect(api.npmPackageInstalledVersion).not.toHaveBeenCalled();
+    });
+    it("rejects an installation without a native compiler version", async () => {
+      api.npmPackageInstalledVersion.and.returnValue(null);
+      await expectAsync(
+        server.installServer({ storagePath: __dirname, version: "7.0.2", api, signal }),
+      ).toBeRejectedWithError(/no native compiler/);
+    });
   });
 });

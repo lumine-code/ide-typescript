@@ -38,6 +38,7 @@ const capabilities = () => ({
     inlayHint: { refreshSupport: true },
   },
   textDocument: {
+    diagnostic: { dynamicRegistration: true, relatedDocumentSupport: true },
     synchronization: { dynamicRegistration: false, didSave: true },
     publishDiagnostics: {
       relatedInformation: true,
@@ -179,12 +180,14 @@ class LiveLspClient {
     try {
       await withTimeout(this.connection.sendRequest("shutdown"), "shutdown", 2500);
       await this.connection.sendNotification("exit");
-    } catch {
+    } catch (error) {
+      this.shutdownError = error.message;
       this.child?.kill();
     }
     try {
       await withTimeout(this.closed, "server close", 1000);
-    } catch {
+    } catch (error) {
+      this.forcedStop = error.message;
       this.child.kill();
       await withTimeout(this.closed, "forced server close", 2500);
     }

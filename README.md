@@ -2,21 +2,21 @@
 
 TypeScript and JavaScript language-server adapter.
 
-Workspace symbol search covers every TypeScript project already activated in the running server, regardless of the current editor. It uses tsserver's `navto` request without a source-file restriction and returns up to 256 results. Opening the workspace symbol picker does not start the server or discover closed projects.
+Workspace symbol search uses the standard language-server protocol and covers every TypeScript project already activated in the running server. Opening the workspace symbol picker does not start the server or discover closed projects.
 
-Registers `typescript-language-server` with `ide`, providing completions, diagnostics, navigation, formatting, and refactoring for TypeScript and JavaScript projects.
+Registers the native TypeScript 7 language server with `ide`, providing completions, pull diagnostics, navigation, formatting, and source actions for TypeScript and JavaScript projects.
 
 ## Features
 
-- **Server choice**: ships `typescript-language-server` with a pinned compiler, can install a newer server with a compatible TypeScript 6, and accepts custom server and TypeScript paths.
+- **Server choice**: ships a pinned native TypeScript 7 compiler, can install newer native compilers, and accepts a custom native executable.
 - **Import style**: chooses the quotes, path style, and extension of every import the server inserts, and can exclude modules from auto-import entirely.
 - **Inlay hints**: shows inferred parameter names, variable, property and return types, and enum values, each behind its own switch.
 - **Code lens**: serves implementation and reference counts for the line a declaration sits on, which the code-lens package renders above it.
-- **Refactoring**: renames symbols, applies source actions, and offers Move to File when the optional `refactor` package is active to collect the new name.
-- **Files outside a project**: sets the compiler options for a file with no `tsconfig.json` above it.
+- **Source actions**: renames symbols, organizes imports, removes unused imports, and applies server-provided fixes.
+- **Call hierarchy**: explores incoming and outgoing calls through the language-server client.
 - **Feature switches**: choose which supported capabilities the editor uses, letting another server handle the ones you disable.
 - **Project sessions**: one server per project root, started lazily with the first matching editor.
-- **Workspace configuration**: answers server configuration requests from the editor settings, including the tab settings tsserver formats its own edits with.
+- **Workspace configuration**: answers native server configuration requests with import, hint, locale, type-acquisition, and editor formatting preferences.
 
 ![TypeScript catches an incompatible assignment and explains the type error.](.github/demo.png)
 
@@ -25,6 +25,8 @@ Registers `typescript-language-server` with `ide`, providing completions, diagno
 To install `ide-typescript` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-typescript`.
 
 Install `ide` first.
+
+Compiler options belong in the project's `tsconfig.json` or `jsconfig.json`. Server Path now selects a native TypeScript compiler executable; the Node tsserver path, syntax-server process, Node heap limit, and wrapper-specific completion and diagnostic controls have been removed. Reinstall a previously managed TypeScript 6 server from Settings before using it with this adapter.
 
 ## Services
 

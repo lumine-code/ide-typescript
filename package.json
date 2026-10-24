@@ -9,7 +9,7 @@
   "keywords": [
     "language-server",
     "lsp",
-    "tsserver",
+    "native-lsp",
     "intellisense",
     "javascript",
     "jsx",
@@ -42,8 +42,7 @@
     }
   },
   "dependencies": {
-    "typescript": "6.0.3",
-    "typescript-language-server": "6.0.2"
+    "typescript": "7.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -57,7 +56,7 @@
   "configSchema": {
     "serverPath": {
       "title": "Server Path",
-      "description": "Absolute path to a server executable or JavaScript entry. Leave empty to use the installed server, or the bundled copy.",
+      "description": "Absolute path to the native TypeScript 7 compiler executable. Leave empty to use the installed compiler, or the bundled copy.",
       "type": "string",
       "default": ""
     },
@@ -153,53 +152,17 @@
         },
         "semanticTokens": {
           "title": "Semantic Tokens",
-          "description": "Colour identifiers with tsserver's classification.",
+          "description": "Colour identifiers using the native language server's semantic tokens.",
           "scopeResolution": "grammar",
           "type": "boolean",
           "default": true
-        }
-      }
-    },
-    "tsserver": {
-      "title": "tsserver",
-      "description": "The TypeScript installation behind the language server, and how it runs.",
-      "type": "object",
-      "properties": {
-        "path": {
-          "title": "TypeScript Path",
-          "description": "Path to a `tsserver.js`, or to the `lib` directory of a TypeScript installation, to use instead of the bundled one. Point this at your project's own `node_modules/typescript` to check against the version the project builds with.",
-          "type": "string",
-          "default": ""
         },
-        "useSyntaxServer": {
-          "title": "Syntax Server",
-          "description": "Run a second, lighter server for the answers that need only the file itself, so syntax highlighting and folding stay responsive while the main server is busy with a large project.",
-          "type": "string",
-          "enum": [
-            "auto",
-            "never"
-          ],
-          "default": "auto"
-        },
-        "maxTsServerMemory": {
-          "title": "Memory Limit",
-          "description": "Megabytes the server may use. Raise it for a large project that runs out; set to 0 for the Node default.",
-          "type": "integer",
-          "minimum": 0,
-          "default": 0
-        },
-        "logVerbosity": {
-          "title": "Log Verbosity",
-          "description": "How much tsserver writes to its log, which `ide:show-log` opens.",
-          "type": "string",
-          "enum": [
-            "off",
-            "terse",
-            "normal",
-            "requestTime",
-            "verbose"
-          ],
-          "default": "off"
+        "callHierarchy": {
+          "title": "Call Hierarchy",
+          "description": "Explore incoming and outgoing function calls.",
+          "scopeResolution": "grammar",
+          "type": "boolean",
+          "default": true
         }
       }
     },
@@ -220,7 +183,7 @@
       "description": "How the server writes the code it inserts.",
       "type": "object",
       "properties": {
-        "quotePreference": {
+        "quoteStyle": {
           "title": "Quote Style",
           "description": "Quotes used in an inserted import. `auto` follows what the file already uses.",
           "type": "string",
@@ -231,7 +194,7 @@
           ],
           "default": "auto"
         },
-        "importModuleSpecifierPreference": {
+        "importModuleSpecifier": {
           "title": "Import Path Style",
           "description": "The path an inserted import is written with.",
           "type": "string",
@@ -252,17 +215,6 @@
             "minimal",
             "index",
             "js"
-          ],
-          "default": "auto"
-        },
-        "includePackageJsonAutoImports": {
-          "title": "Auto-Import From Dependencies",
-          "description": "Offer symbols from the packages in `package.json`. `auto` stops doing so in a project large enough for it to be slow.",
-          "type": "string",
-          "enum": [
-            "auto",
-            "on",
-            "off"
           ],
           "default": "auto"
         },
@@ -291,13 +243,6 @@
             "none"
           ],
           "default": "auto"
-        },
-        "maximumHoverLength": {
-          "title": "Maximum Hover Length",
-          "description": "Characters of a type shown on hover before it is truncated.",
-          "type": "integer",
-          "minimum": 1,
-          "default": 500
         }
       }
     },
@@ -383,52 +328,6 @@
           "description": "Count the uses of every function, not only the exported ones.",
           "type": "boolean",
           "default": false
-        }
-      }
-    },
-    "completeFunctionCalls": {
-      "title": "Complete Function Calls",
-      "description": "Accepting a function fills in its parameters as snippet tab stops, rather than inserting the name alone.",
-      "type": "boolean",
-      "default": true
-    },
-    "ignoredDiagnosticCodes": {
-      "title": "Ignored Diagnostic Codes",
-      "description": "TypeScript error numbers never to report, without the `TS` prefix — `2307` for an unresolved import, say. The number is shown beside every message in the linter.",
-      "type": "array",
-      "items": {
-        "type": "integer"
-      },
-      "default": []
-    },
-    "implicitProjectConfiguration": {
-      "title": "Files Outside A Project",
-      "description": "Compiler options for a file with no `tsconfig.json` or `jsconfig.json` above it. A file inside a project takes its options from that project and ignores these.",
-      "type": "object",
-      "properties": {
-        "checkJs": {
-          "title": "Check JavaScript",
-          "description": "Type-check JavaScript files, not only TypeScript.",
-          "type": "boolean",
-          "default": false
-        },
-        "experimentalDecorators": {
-          "title": "Experimental Decorators",
-          "description": "Allow the pre-standard decorator syntax.",
-          "type": "boolean",
-          "default": false
-        },
-        "target": {
-          "title": "Target",
-          "description": "The JavaScript version the code is written for.",
-          "type": "string",
-          "default": "ES2020"
-        },
-        "module": {
-          "title": "Module",
-          "description": "The module system the code is written for.",
-          "type": "string",
-          "default": "ESNext"
         }
       }
     }
