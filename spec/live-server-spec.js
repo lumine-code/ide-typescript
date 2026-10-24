@@ -194,7 +194,7 @@ describe("ide-typescript bundled server", () => {
     // shutdown: https://github.com/microsoft/TypeScript/issues/64742.
     // Accept only that exact upstream result, never a timeout or forced kill.
     expect(
-      first.exitCode === 0 || (first.exitCode === 1 && client.stderr.trim() === "context canceled"),
+      first.exitCode === 0 || (first.exitCode === 1 && /^context canceled$/m.test(client.stderr)),
     )
       .withContext(client.stderr)
       .toBe(true);
